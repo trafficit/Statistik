@@ -1,0 +1,41 @@
+import requests
+import pandas as pd
+import os
+
+# --- Настройки ---
+ORG = "название_компании"  # Укажи название организации
+TOKEN = os.getenv("GITHUB_TOKEN")  # Токен GitHub (безопасное хранение)
+HEADERS = {"Authorization": f"token {TOKEN}"}
+
+# --- Функция для получения списка репозиториев ---
+def get_repos():
+    url = f"https://api.github.com/orgs/{ORG}/repos"
+    response = requests.get(url, headers=HEADERS)
+    return response.json()
+
+# --- Функция для получения коммитов ---
+def get_commits(repo):
+    url = f"https://api.github.com/repos/{ORG}/{repo}/commits"
+    response = requests.get(url, headers=HEADERS)
+    return response.json()
+
+# --- Сбор данных ---
+commit_data = []
+repos = get_repos()
+
+for repo in repos:
+    repo_name = repo["name"]
+    commits = get_commits(repo_name)
+
+    for commit in commits:
+        commit_data.append({
+            "repo": repo_name,
+            "author": commit["commit"]["author"]["name"],
+            "date": commit["commit"]["author"]["date"],
+            "message": commit["commit"]["message"]
+        })
+
+# --- Создание DataFrame ---
+df = pd.DataFrame(commit_data)
+df.to_csv("commits.csv", index=False)
+print("Данные сохранены в commits.csv")
